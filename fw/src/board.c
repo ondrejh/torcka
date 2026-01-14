@@ -22,7 +22,7 @@ ButtonState button_poll(btn_ctx_t *ctx, uint32_t now) {
 
   if (ctx->t != now) { // 1 ms
     ctx->t = now;
-    bool press = !gpio_get(ctx->pin);
+    bool press = gpio_get(ctx->pin);
 
     switch (ctx->st) {
 

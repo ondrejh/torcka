@@ -5,8 +5,10 @@
 
 #define PIN_LED 26
 #define NUM_LEDS 8
+#define LED_PERIOD 50
 
 #define PIN_ONBOARD_LED 25
+#define PIN_BUTTON 0
 
 #include "pico/rand.h"
 
@@ -33,7 +35,7 @@ void rnd2col(uint32_t rnd, uint8_t *r, uint8_t *g, uint8_t *b) {
 }
 
 const float adc2vbat = 4.2f / 2334; // 4.2V ~ 2334 raw adc 
-const float adc2vusb = 3.3f / (1 << 12) * 3.0f;
+const float adc2vusb = 3.3f / (1 << 12) * (3.0f/2.0f);
 
 void init(void) {
   // init adc
@@ -59,20 +61,50 @@ int main() {
 
   uint32_t cnt = 0;
   bool led = false;
+  bool light = false;
+
+  btn_ctx_t button;
+  button_init(&button, PIN_BUTTON);
+
+  uint8_t buff[3 * NUM_LEDS];
+  memset(buff, 0, 3*NUM_LEDS);
 
   while (true) {
     int32_t now = millis();
 
-    if ((now - tLed) > 100) {
+    ButtonState bs = button_poll(&button, now);
+
+    if (bs == BTNST_PRESSED) { 
+      printf("PRESSED\n");
+      light = !light;
+    }
+    else if (bs == BTNST_LONG_PRESSED)
+      printf("LONG PRESSED\n");
+
+    if ((now - tLed) > LED_PERIOD) {
       tLed = now;
+
       cnt += 1;
       cnt %= NUM_LEDS;
+
+      if (light) {
+        int c = rand_range(0, NUM_LEDS - 1);
+        uint32_t rnd = rand_range(127, 3*256 - 1);
+        rnd2col(rnd, &buff[c*3], &buff[c*3 + 1], &buff[c*3 + 2]);
+      }
+
+      else {
+        int c;
+        for (int i=0; i < NUM_LEDS; i++) {
+          c = rand_range(0, NUM_LEDS - 1);
+          if (buff[c*3] || buff[c*3 + 1] || buff[c*3 + 2])
+            break;
+        }
+        memset(&buff[c*3], 0, 3);
+      }
+
       for (int i=0; i < NUM_LEDS; i++) {
-        uint32_t rnd = rand_range(0, 3*256 - 1);
-        uint8_t r, g, b;
-        rnd2col(rnd, &r, &g, &b);
-        put_pixel(urgb_u32(r, g, b));
-        //put_pixel(urgb_u32((cnt == i) ? 10 : 0, 0, 0));
+        put_pixel(urgb_u32(buff[i*3], buff[i*3+1], buff[i*3+2]));
       }
     }
 
