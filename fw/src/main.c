@@ -8,10 +8,12 @@
 
 #define PIN_ONBOARD_LED 25
 
-const uint16_t adc_vref = 3300; // 3.3V
+const float adc2vbat = 4.2f / 2334; // 4.2V ~ 2334 raw adc 
+const float adc2vusb = 3.3f / (1 << 12) * 3.0f;
 
 void init(void) {
   // init adc
+  adc_init();
   adc_gpio_init(ADC_BATT);
   adc_gpio_init(ADC_VCC);
 
@@ -47,7 +49,18 @@ int main() {
 
     if ((now - tAdc) > 1000) {
       tAdc = now;
-      led = !led;
+      led = true;
+      gpio_put(PIN_ONBOARD_LED, led);
+      adc_select_input(3);
+      uint16_t rvbat = adc_read();
+      adc_select_input(1);
+      uint16_t rvusb = adc_read();
+      printf("VBat: %u %0.02fV, VUSB: %u %0.02fV\n",
+          rvbat, rvbat * adc2vbat,
+          rvusb, rvusb * adc2vusb);
+    }
+    else if (led && ((now - tAdc) > 10)) {
+      led = false;
       gpio_put(PIN_ONBOARD_LED, led);
     }
   }
