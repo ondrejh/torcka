@@ -1,0 +1,6 @@
+[submodule "fw/src/ext/pico-sdk"]
+	path = fw/src/ext/pico-sdk
+	url = https://github.com/raspberrypi/pico-sdk.git
+[submodule "fw/src/ext/pico-examples"]
+	path = fw/src/ext/pico-examples
+	url = https://github.com/raspberrypi/pico-examples.git
